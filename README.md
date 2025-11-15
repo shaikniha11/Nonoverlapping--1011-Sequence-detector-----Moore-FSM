@@ -1,0 +1,2 @@
+# Nonoverlapping--1011-Sequence-detector-----Moore-FSM
+This project implements a non-overlapping sequence detector for the 4-bit binary pattern "1011". In non-overlapping mode, after detecting a complete sequence, the FSM completely resets to the initial state, requiring a fresh start for the next detection. This behavior is essential for applications requiring unique, non-repetitive pattern markers.
