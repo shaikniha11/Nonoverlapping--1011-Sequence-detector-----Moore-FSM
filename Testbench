@@ -1,0 +1,138 @@
+// Code your testbench here
+// or browse Examples
+`timescale 1ns/1ps
+
+module tb_sequence_detector_nonoverlap;
+
+    // Testbench signals
+    reg clk;
+    reg reset;
+    reg get_data;
+    wire out;
+    
+    // Instantiate the DUT (Device Under Test)
+    sequence_detector_nonoverlap uut (
+        .clk(clk),
+        .reset(reset),
+        .get_data(get_data),
+        .out(out)
+    );
+    
+    // Clock generation - 10ns period (100MHz)
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;
+    end
+    
+    // Test stimulus
+    initial begin
+        // Initialize signals
+        reset = 0;
+        get_data = 0;
+        
+        // Create VCD file for waveform viewing
+        $dumpfile("sequence_detector.vcd");
+        $dumpvars(0, tb_sequence_detector_nonoverlap);
+        
+        // Display header
+        $display("========================================");
+        $display("Sequence Detector Testbench - Pattern: 1011");
+        $display("========================================");
+        $monitor("Time=%0t | Reset=%b | Input=%b | Output=%b | State=%b", 
+                 $time, reset, get_data, out, uut.present_state);
+        
+        // Apply reset
+        #10 reset = 1;
+        #10 reset = 0;
+        #10 reset = 1;
+        
+        // Test Case 1: Simple sequence 1011
+        $display("\n--- Test Case 1: Input sequence 1011 ---");
+        #10 get_data = 1;  // 1
+        #10 get_data = 0;  // 0
+        #10 get_data = 1;  // 1
+        #10 get_data = 1;  // 1 - Should detect here
+        #10 get_data = 0;
+        
+        // Test Case 2: Multiple 1s before sequence
+        $display("\n--- Test Case 2: Input sequence 11011 ---");
+        #10 get_data = 1;  // 1
+        #10 get_data = 1;  // 1 (stay in s1)
+        #10 get_data = 0;  // 0
+        #10 get_data = 1;  // 1
+        #10 get_data = 1;  // 1 - Should detect here
+        #10 get_data = 0;
+        
+        // Test Case 3: Incomplete sequence
+        $display("\n--- Test Case 3: Incomplete sequence 101 ---");
+        #10 get_data = 1;  // 1
+        #10 get_data = 0;  // 0
+        #10 get_data = 1;  // 1
+        #10 get_data = 0;  // 0 - No detection
+        #10 get_data = 0;
+        
+        // Test Case 4: Multiple sequences back-to-back (non-overlapping)
+        $display("\n--- Test Case 4: Back-to-back sequences 10111011 ---");
+        #10 get_data = 1;  // 1
+        #10 get_data = 0;  // 0
+        #10 get_data = 1;  // 1
+        #10 get_data = 1;  // 1 - First detection
+        #10 get_data = 1;  // 1 (restart)
+        #10 get_data = 0;  // 0
+        #10 get_data = 1;  // 1
+        #10 get_data = 1;  // 1 - Second detection
+        #10 get_data = 0;
+        
+        // Test Case 5: All zeros
+        $display("\n--- Test Case 5: All zeros ---");
+        #10 get_data = 0;
+        #10 get_data = 0;
+        #10 get_data = 0;
+        #10 get_data = 0;
+        
+        // Test Case 6: Reset during sequence
+        $display("\n--- Test Case 6: Reset during sequence ---");
+        #10 get_data = 1;  // 1
+        #10 get_data = 0;  // 0
+        #10 reset = 0;     // Reset
+        #10 reset = 1;
+        #10 get_data = 1;  // Continue after reset
+        #10 get_data = 0;
+        
+        // Test Case 7: Long sequence with pattern
+        $display("\n--- Test Case 7: Long sequence 001011010110 ---");
+        #10 get_data = 0;
+        #10 get_data = 0;
+        #10 get_data = 1;  // 1
+        #10 get_data = 0;  // 0
+        #10 get_data = 1;  // 1
+        #10 get_data = 1;  // 1 - Detection
+        #10 get_data = 0;
+        #10 get_data = 1;  // 1
+        #10 get_data = 0;  // 0
+        #10 get_data = 1;  // 1
+        #10 get_data = 1;  // 1 - Detection
+        #10 get_data = 0;
+        
+        // Finish simulation
+        #50;
+        $display("\n========================================");
+        $display("Testbench completed successfully!");
+        $display("========================================");
+        $finish;
+    end
+    
+    // Optional: Check for correct detections
+    integer detection_count;
+    initial begin
+        detection_count = 0;
+        forever begin
+            @(posedge clk);
+            if (out == 1'b1) begin
+                detection_count = detection_count + 1;
+                $display(">>> DETECTION #%0d at time %0t <<<", detection_count, $time);
+            end
+        end
+    end
+    
+endmodule
