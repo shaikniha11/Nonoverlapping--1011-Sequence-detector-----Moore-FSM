@@ -1,0 +1,62 @@
+// Code your design here
+module sequence_detector_nonoverlap(
+input wire clk,
+input wire reset,
+input wire get_data,
+output reg out);
+localparam [4:0] s0=5'b00001,
+                 s1=5'b00010,
+                 s10=5'b00100,
+                 s101=5'b01000,
+                 s1011=5'b10000;
+reg [4:0] present_state , next_state;
+always @(posedge clk or negedge reset) begin
+if(reset==0)
+    present_state=s0;
+else
+    present_state=next_state;
+end
+always @(*) begin
+next_state=s0;
+case(present_state)
+s0:begin
+    if(get_data)
+        next_state=s1;
+    else
+        next_state=s0;
+    end
+s1:begin
+    if(get_data)
+        next_state=s1;
+    else
+        next_state=s10;
+    end
+s10:begin
+    if(get_data)
+        next_state=s101;
+    else
+        next_state=s0;
+    end
+s101:begin
+    if(get_data)
+        next_state=s1011;
+    else
+        next_state=s10;
+     end
+s1011:begin
+        next_state=s0;
+    end
+default:
+    next_state=s0;
+endcase
+end
+
+always @(posedge clk or negedge reset) begin
+if(reset==0)
+out=1'b0;
+else if(present_state==s1011)
+out=1'b1;
+else
+out=1'b0;
+end
+endmodule
